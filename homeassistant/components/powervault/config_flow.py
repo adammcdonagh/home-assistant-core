@@ -4,9 +4,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import voluptuous as vol
 from powervaultpy import PowerVault
 from powervaultpy.powervault import RequestError, ServerError
-import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
@@ -18,7 +18,6 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-# TODO adjust the data schema to the data that you need
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required("api_key"): str,
@@ -33,6 +32,8 @@ STEP_PICK_UNIT_DATA_SCHEMA = vol.Schema(
 
 
 async def validate_unit(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+    """Validate the user input allows us to connect."""
+    # TODO: validate the data can be used to set up a connection.
     return True
 
 
@@ -53,15 +54,16 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     account_id = None
     units = None
+
     try:
         account_response = await hass.async_add_executor_job(powervault.get_account)
         account_id = account_response["id"]
         units = await hass.async_add_executor_job(powervault.get_units, account_id)
 
-    except RequestError:
-        raise InvalidAuth
-    except ServerError:
-        raise CannotConnect
+    except RequestError as exc:
+        raise InvalidAuth from exc
+    except ServerError as exc:
+        raise CannotConnect from exc
 
     # If you cannot connect:
     # throw CannotConnect
@@ -79,6 +81,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Powervault."""
 
     VERSION = 1
+    unit_id: str
+    unit_name: str
+    account_info: str
+    api_key: str
 
     async def async_step_pick_unit(
         self, user_input: dict[str, Any] | None = None

@@ -1,9 +1,11 @@
 """The powervault integration models."""
 from __future__ import annotations
-from typing import TypedDict
-from requests import Session
+
 from dataclasses import dataclass
+from typing import TypedDict
+
 from powervaultpy import PowerVault
+from requests import Session
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -11,17 +13,31 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 @dataclass
 class PowervaultBaseInfo:
     """Base information for the powervault integration."""
+
     id: str
     model: str
-    customer_name: str
     eprom_id: str
+
 
 @dataclass
 class PowervaultData:
     """Point in time data for the powervault integration."""
-    charge: float
-    metrics: dict
 
+    charge: float
+    batteryInputFromGrid: float
+    batteryInputFromSolar: float
+    batteryOutputConsumedByHome: float
+    batteryOutputExported: float
+    homeConsumed: float
+    gridConsumedByHome: float
+    solarConsumedByHome: float
+    solarExported: float
+    instant_battery: float
+    instant_demand: float
+    instant_grid: float
+    solarGenerated: float
+    solarConsumption: float
+    instant_solar: float
 
 
 class PowervaultRuntimeData(TypedDict):
