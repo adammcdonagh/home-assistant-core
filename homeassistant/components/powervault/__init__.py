@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
+import requests
 from powervaultpy import PowerVault
 from powervaultpy.powervault import ServerError
-import requests
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -142,7 +142,9 @@ def _fetch_powervault_data(client: PowerVault, unit_id: str) -> PowervaultData:
         instant_grid=data[0]["instant_grid"],
         solarGenerated=data[0]["solarGenerated"],
         solarConsumption=data[0]["solarConsumption"],
-        instant_solar=data[0]["instant_solar"] if data[0]["instant_solar"] > 10 else 0,
+        instant_solar=data[0]["instant_solar"]
+        if data[0]["instant_solar"] > 10000
+        else 0,
         battery_state=battery_state,
         totals=totals,
     )
