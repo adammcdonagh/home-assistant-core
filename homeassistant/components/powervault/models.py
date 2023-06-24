@@ -38,6 +38,8 @@ class PowervaultData:
     solarGenerated: float
     solarConsumption: float
     instant_solar: float
+    battery_state: str
+    totals: dict
 
 
 class PowervaultRuntimeData(TypedDict):

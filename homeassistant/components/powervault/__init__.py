@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import logging
-from asyncio import Server
 from datetime import timedelta
+import logging
 
-import requests
 from powervaultpy import PowerVault
 from powervaultpy.powervault import ServerError
+import requests
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -19,7 +18,7 @@ from .const import DOMAIN, POWERVAULT_COORDINATOR, UPDATE_INTERVAL
 from .models import PowervaultBaseInfo, PowervaultData, PowervaultRuntimeData
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SELECT]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -84,7 +83,7 @@ def _call_base_info(client: PowerVault, unit_id) -> PowervaultBaseInfo:
 
 
 class PowervaultDataManager:
-    """Class to manager powervault data"""
+    """Class to manager powervault data."""
 
     def __init__(
         self,
@@ -123,6 +122,11 @@ def _fetch_powervault_data(client: PowerVault, unit_id: str) -> PowervaultData:
     """Process and update powervault data."""
     data = client.get_data(unit_id)
 
+    totals = client.get_data(unit_id, period="today")
+    totals = client.get_kwh(totals)
+
+    battery_state = client.get_battery_state(unit_id)
+
     return PowervaultData(
         charge=data[0]["instant_soc"],
         batteryInputFromGrid=data[0]["batteryInputFromGrid"],
@@ -138,5 +142,7 @@ def _fetch_powervault_data(client: PowerVault, unit_id: str) -> PowervaultData:
         instant_grid=data[0]["instant_grid"],
         solarGenerated=data[0]["solarGenerated"],
         solarConsumption=data[0]["solarConsumption"],
-        instant_solar=data[0]["instant_solar"],
+        instant_solar=data[0]["instant_solar"] if data[0]["instant_solar"] > 10 else 0,
+        battery_state=battery_state,
+        totals=totals,
     )

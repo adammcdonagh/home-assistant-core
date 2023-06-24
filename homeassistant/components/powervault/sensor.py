@@ -3,26 +3,16 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from dataclasses import dataclass
 
 from powervaultpy import PowerVault
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
-    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfEnergy,
-    UnitOfFrequency,
-    UnitOfPower,
-)
+from homeassistant.const import PERCENTAGE, UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -82,6 +72,18 @@ energy_sensor_names = [
     ["instant_solar", "Instant Solar"],
 ]
 
+power_sensor_names = [
+    ["batteryInputFromGrid", "Total Battery Input From Grid"],
+    ["batteryInputFromSolar", "Total Battery Input From Solar"],
+    ["batteryOutputConsumedByHome", "Total Battery Output Consumed By Home"],
+    ["batteryOutputExported", "Total Battery Output Exported"],
+    ["homeConsumed", "Total Home Consumed"],
+    ["gridConsumedByHome", "Total Grid Consumed By Home"],
+    ["solarConsumedByHome", "Total Solar Consumed By Home"],
+    ["solarExported", "Total Solar Exported"],
+    ["solarGenerated", "Total Solar Generated"],
+]
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -92,7 +94,6 @@ async def async_setup_entry(
     powervault_data: PowerVault = hass.data[DOMAIN][config_entry.entry_id]
     coordinator = powervault_data[POWERVAULT_COORDINATOR]
     assert coordinator is not None
-    data = coordinator.data
     entities: list[PowervaultEntity] = [
         PowervaultChargeSensor(powervault_data),
     ]
@@ -106,6 +107,10 @@ async def async_setup_entry(
     for sensor in energy_sensor_names:
         _LOGGER.debug(f"Adding sensor {sensor[0]}")
         entities.append(PowervaultEnergySensor(powervault_data, sensor[0], sensor[1]))
+
+    for sensor in power_sensor_names:
+        _LOGGER.debug(f"Adding sensor {sensor[0]}")
+        entities.append(PowervaultPowerSensor(powervault_data, sensor[0], sensor[1]))
 
     async_add_entities(entities)
 
@@ -152,3 +157,29 @@ class PowervaultEnergySensor(PowervaultEntity, SensorEntity):
     def native_value(self) -> int:
         """Get the current value in percentage."""
         return round(getattr(self.data, self.json_key) / 1000)
+
+
+class PowervaultPowerSensor(PowervaultEntity, SensorEntity):
+    """Representation of an Powervault Power sensor."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_device_class = SensorDeviceClass.ENERGY
+
+    def __init__(
+        self,
+        powervault_data: PowervaultRuntimeData,
+        json_key: str,
+        description: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(powervault_data)
+        self._attr_name = f"Powervault {description}"
+        self._attr_unique_id = f"{self.base_unique_id}_total{json_key}"
+        self.json_key = json_key
+
+    @property
+    def native_value(self) -> int:
+        """Get the current value in percentage."""
+
+        return round(self.data.totals[self.json_key] / 1000, 2)

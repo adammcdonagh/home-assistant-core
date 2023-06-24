@@ -19,6 +19,8 @@ from .models import PowervaultData, PowervaultRuntimeData
 class PowervaultEntity(CoordinatorEntity[DataUpdateCoordinator[PowervaultData]]):
     """Base class for powervault entities."""
 
+    base_unique_id: str
+
     def __init__(self, powervault_data: PowervaultRuntimeData) -> None:
         """Initialize the entity."""
         base_info = powervault_data[POWERVAULT_BASE_INFO]
